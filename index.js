@@ -12,12 +12,10 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// 🧠 storage
 const giveaways = new Map();
-// messageId -> { prize, winnersCount, participants:Set, active }
 
 function parseDuration(str) {
-  const match = str.match(/(\d+)(s|m|h)/);
+  const match = str.match(/(\d+)(s|m|h|d)/);
   if (!match) return 60000;
 
   const value = parseInt(match[1]);
@@ -26,6 +24,7 @@ function parseDuration(str) {
   if (type === 's') return value * 1000;
   if (type === 'm') return value * 60000;
   if (type === 'h') return value * 3600000;
+  if (type === 'd') return value * 86400000;
 }
 
 function pickWinners(set, count) {
@@ -48,7 +47,7 @@ client.once('ready', () => {
 
 client.on('interactionCreate', async (interaction) => {
 
-  /* ---------------- SLASH COMMANDS ---------------- */
+  /* -------- SLASH COMMANDS -------- */
   if (interaction.isChatInputCommand()) {
 
     /* GIVEAWAY */
@@ -57,12 +56,16 @@ client.on('interactionCreate', async (interaction) => {
       const prize = interaction.options.getString('prize');
       const winnersCount = interaction.options.getInteger('winners') || 1;
 
+      const durationMs = parseDuration(duration);
+      const endTime = Math.floor((Date.now() + durationMs) / 1000);
+
       const embed = new EmbedBuilder()
         .setTitle('🎉 GIVEAWAY')
         .setDescription(
           `Prize: **${prize}**\n` +
           `🏆 Winners: **${winnersCount}**\n` +
-          `👥 Participants: **0**\n\n` +
+          `👥 Participants: **0**\n` +
+          `⏰ Ends: <t:${endTime}:R>\n\n` +
           `Click the button to join!`
         )
         .setColor('Gold');
@@ -84,14 +87,35 @@ client.on('interactionCreate', async (interaction) => {
         prize,
         winnersCount,
         participants: new Set(),
-        active: true
+        active: true,
+        endTime
       });
 
       setTimeout(async () => {
         const data = giveaways.get(msg.id);
         if (!data || !data.active) return;
 
+        data.active = false;
+
         const winners = pickWinners(data.participants, data.winnersCount);
+
+        const disabledRow = new ActionRowBuilder().addComponents(
+          ButtonBuilder.from(row.components[0]).setDisabled(true)
+        );
+
+        const endedEmbed = EmbedBuilder.from(embed)
+          .setDescription(
+            `Prize: **${data.prize}**\n` +
+            `🏆 Winners: **${data.winnersCount}**\n` +
+            `👥 Participants: **${data.participants.size}**\n` +
+            `⏰ Ended\n\n` +
+            `Giveaway finished.`
+          );
+
+        await msg.edit({
+          embeds: [endedEmbed],
+          components: [disabledRow]
+        });
 
         if (winners.length === 0) {
           return interaction.followUp('❌ No participants joined.');
@@ -101,9 +125,7 @@ client.on('interactionCreate', async (interaction) => {
 
         interaction.followUp(`🏆 Winner(s): ${text} won **${data.prize}** 🎉`);
 
-        data.active = false;
-
-      }, parseDuration(duration));
+      }, durationMs);
     }
 
     /* END */
@@ -165,7 +187,7 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-  /* ---------------- BUTTON ---------------- */
+  /* -------- BUTTON -------- */
   if (interaction.isButton()) {
 
     if (interaction.customId === 'join_giveaway') {
@@ -199,7 +221,8 @@ client.on('interactionCreate', async (interaction) => {
         .setDescription(
           `Prize: **${giveaway.prize}**\n` +
           `🏆 Winners: **${giveaway.winnersCount}**\n` +
-          `👥 Participants: **${giveaway.participants.size}**\n\n` +
+          `👥 Participants: **${giveaway.participants.size}**\n` +
+          `⏰ Ends: <t:${giveaway.endTime}:R>\n\n` +
           `Click the button to join!`
         );
 
