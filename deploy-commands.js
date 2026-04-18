@@ -5,42 +5,42 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName('giveaway')
-    .setDescription('Start een giveaway')
+    .setDescription('Start a giveaway')
     .addStringOption(option =>
       option.setName('duration')
-        .setDescription('Tijd zoals 10s, 5m, 1h')
+        .setDescription('Example: 10s, 5m, 1h')
         .setRequired(true)
     )
     .addStringOption(option =>
       option.setName('prize')
-        .setDescription('Wat wordt er weggegeven?')
+        .setDescription('What is being given away?')
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName('reroll')
-    .setDescription('Reroll een winnaar van een giveaway')
+    .setDescription('Reroll a giveaway winner')
     .addStringOption(option =>
       option.setName('message_id')
-        .setDescription('ID van het giveaway bericht')
+        .setDescription('ID of the giveaway message')
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName('end')
-    .setDescription('Stop een giveaway direct')
+    .setDescription('End a giveaway immediately')
     .addStringOption(option =>
       option.setName('message_id')
-        .setDescription('ID van het giveaway bericht')
+        .setDescription('ID of the giveaway message')
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName('participants')
-    .setDescription('Bekijk deelnemers van een giveaway')
+    .setDescription('View giveaway participants')
     .addStringOption(option =>
       option.setName('message_id')
-        .setDescription('ID van het giveaway bericht')
+        .setDescription('ID of the giveaway message')
         .setRequired(true)
     )
 
@@ -50,7 +50,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
   try {
-    console.log('🔄 Slash commands registreren...');
+    console.log('🔄 Registering slash commands...');
 
     await rest.put(
       Routes.applicationGuildCommands(
@@ -60,7 +60,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
       { body: commands }
     );
 
-    console.log('✅ Slash commands succesvol geregistreerd!');
+    console.log('✅ Slash commands registered successfully!');
   } catch (error) {
     console.error(error);
   }
