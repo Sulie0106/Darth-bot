@@ -6,56 +6,56 @@ const commands = [
   new SlashCommandBuilder()
     .setName('giveaway')
     .setDescription('Start a giveaway')
-    .addStringOption(option =>
-      option.setName('duration')
-        .setDescription('Example: 10s, 5m, 1h')
+    .addStringOption(o =>
+      o.setName('duration')
+        .setDescription('10s, 5m, 1h')
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option.setName('prize')
-        .setDescription('What is being given away')
+    .addStringOption(o =>
+      o.setName('prize')
+        .setDescription('Prize')
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option.setName('winners')
-        .setDescription('Number of winners (default is 1)')
+    .addIntegerOption(o =>
+      o.setName('winners')
+        .setDescription('Number of winners')
         .setRequired(false)
     ),
 
   new SlashCommandBuilder()
     .setName('reroll')
-    .setDescription('Reroll giveaway winner(s)')
-    .addStringOption(option =>
-      option.setName('message_id')
-        .setDescription('ID of the giveaway message')
+    .setDescription('Reroll winner(s)')
+    .addStringOption(o =>
+      o.setName('message_id')
+        .setDescription('Giveaway message ID')
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName('end')
-    .setDescription('End a giveaway early')
-    .addStringOption(option =>
-      option.setName('message_id')
-        .setDescription('ID of the giveaway message')
+    .setDescription('End giveaway early')
+    .addStringOption(o =>
+      o.setName('message_id')
+        .setDescription('Giveaway message ID')
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName('participants')
-    .setDescription('View giveaway participants')
-    .addStringOption(option =>
-      option.setName('message_id')
-        .setDescription('ID of the giveaway message')
+    .setDescription('View participants')
+    .addStringOption(o =>
+      o.setName('message_id')
+        .setDescription('Giveaway message ID')
         .setRequired(true)
     )
 
-].map(cmd => cmd.toJSON());
+].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
   try {
-    console.log('🔄 Registering slash commands...');
+    console.log('🔄 Registering commands...');
 
     await rest.put(
       Routes.applicationGuildCommands(
@@ -65,8 +65,8 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
       { body: commands }
     );
 
-    console.log('✅ Slash commands registered successfully!');
-  } catch (error) {
-    console.error('❌ Error registering commands:', error);
+    console.log('✅ Commands registered!');
+  } catch (err) {
+    console.error(err);
   }
 })();
