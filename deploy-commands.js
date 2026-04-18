@@ -13,13 +13,18 @@ const commands = [
     )
     .addStringOption(option =>
       option.setName('prize')
-        .setDescription('What is being given away?')
+        .setDescription('What is being given away')
         .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName('winners')
+        .setDescription('Number of winners (default is 1)')
+        .setRequired(false)
     ),
 
   new SlashCommandBuilder()
     .setName('reroll')
-    .setDescription('Reroll a giveaway winner')
+    .setDescription('Reroll giveaway winner(s)')
     .addStringOption(option =>
       option.setName('message_id')
         .setDescription('ID of the giveaway message')
@@ -28,7 +33,7 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName('end')
-    .setDescription('End a giveaway immediately')
+    .setDescription('End a giveaway early')
     .addStringOption(option =>
       option.setName('message_id')
         .setDescription('ID of the giveaway message')
@@ -62,6 +67,6 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
     console.log('✅ Slash commands registered successfully!');
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error registering commands:', error);
   }
 })();
