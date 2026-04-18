@@ -12,9 +12,9 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// 🧠 Giveaway storage
+// 🧠 storage
 const giveaways = new Map();
-// messageId -> { prize, winnersCount, participants: Set, active }
+// messageId -> { prize, winnersCount, participants:Set, active }
 
 function parseDuration(str) {
   const match = str.match(/(\d+)(s|m|h)/);
@@ -28,14 +28,9 @@ function parseDuration(str) {
   if (type === 'h') return value * 3600000;
 }
 
-function pickRandom(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
 function pickWinners(set, count) {
   const arr = [...set];
   const winners = [];
-
   const copy = [...arr];
 
   for (let i = 0; i < count && copy.length > 0; i++) {
@@ -51,15 +46,13 @@ client.once('ready', () => {
   console.log(`🤖 Logged in as ${client.user.tag}`);
 });
 
-/* ---------------- INTERACTIONS ---------------- */
 client.on('interactionCreate', async (interaction) => {
 
-  /* -------- SLASH COMMANDS -------- */
+  /* ---------------- SLASH COMMANDS ---------------- */
   if (interaction.isChatInputCommand()) {
 
     /* GIVEAWAY */
     if (interaction.commandName === 'giveaway') {
-
       const duration = interaction.options.getString('duration');
       const prize = interaction.options.getString('prize');
       const winnersCount = interaction.options.getInteger('winners') || 1;
@@ -70,7 +63,7 @@ client.on('interactionCreate', async (interaction) => {
           `Prize: **${prize}**\n` +
           `🏆 Winners: **${winnersCount}**\n` +
           `👥 Participants: **0**\n\n` +
-          `Click the button below to join!`
+          `Click the button to join!`
         )
         .setColor('Gold');
 
@@ -96,25 +89,45 @@ client.on('interactionCreate', async (interaction) => {
 
       setTimeout(async () => {
         const data = giveaways.get(msg.id);
-        if (!data) return;
-
-        const participants = [...data.participants];
-
-        if (participants.length === 0) {
-          return interaction.followUp('❌ No participants joined the giveaway.');
-        }
+        if (!data || !data.active) return;
 
         const winners = pickWinners(data.participants, data.winnersCount);
 
-        const winnerText = winners.map(w => `<@${w}>`).join(', ');
+        if (winners.length === 0) {
+          return interaction.followUp('❌ No participants joined.');
+        }
 
-        interaction.followUp(
-          `🏆 Winner(s): ${winnerText} won **${data.prize}** 🎉`
-        );
+        const text = winners.map(w => `<@${w}>`).join(', ');
+
+        interaction.followUp(`🏆 Winner(s): ${text} won **${data.prize}** 🎉`);
 
         data.active = false;
 
       }, parseDuration(duration));
+    }
+
+    /* END */
+    if (interaction.commandName === 'end') {
+      await interaction.deferReply();
+
+      const id = interaction.options.getString('message_id');
+      const data = giveaways.get(id);
+
+      if (!data) {
+        return interaction.editReply('❌ Giveaway not found.');
+      }
+
+      data.active = false;
+
+      const winners = pickWinners(data.participants, data.winnersCount);
+
+      if (winners.length === 0) {
+        return interaction.editReply('❌ No participants.');
+      }
+
+      const text = winners.map(w => `<@${w}>`).join(', ');
+
+      return interaction.editReply(`🏁 Giveaway ended! Winner(s): ${text} 🎉`);
     }
 
     /* REROLL */
@@ -127,7 +140,7 @@ client.on('interactionCreate', async (interaction) => {
       const winners = pickWinners(data.participants, data.winnersCount);
 
       if (winners.length === 0) {
-        return interaction.reply('❌ No participants found.');
+        return interaction.reply('❌ No participants.');
       }
 
       const text = winners.map(w => `<@${w}>`).join(', ');
@@ -147,54 +160,53 @@ client.on('interactionCreate', async (interaction) => {
         .join('\n');
 
       return interaction.reply(
-        `👥 Participants: **${data.participants.size}**\n\n${list || "No participants yet."}`
+        `👥 Participants: **${data.participants.size}**\n\n${list || "None"}`
       );
     }
   }
 
-  /* -------- BUTTON CLICK -------- */
+  /* ---------------- BUTTON ---------------- */
   if (interaction.isButton()) {
 
     if (interaction.customId === 'join_giveaway') {
 
-      if (interaction.user.bot) {
+      const giveaway = giveaways.get(interaction.message.id);
+
+      if (!giveaway || !giveaway.active) {
         return interaction.reply({
-          content: '❌ Bots cannot join giveaways.',
+          content: '❌ This giveaway is not active.',
           ephemeral: true
         });
       }
 
-      const giveaway = giveaways.get(interaction.message.id);
-
-      if (!giveaway) {
+      if (interaction.user.bot) {
         return interaction.reply({
-          content: '❌ This giveaway no longer exists.',
+          content: '❌ Bots cannot join.',
           ephemeral: true
         });
       }
 
       if (giveaway.participants.has(interaction.user.id)) {
         return interaction.reply({
-          content: '⚠️ You already joined this giveaway.',
+          content: '⚠️ You already joined.',
           ephemeral: true
         });
       }
 
       giveaway.participants.add(interaction.user.id);
 
-      // 🔥 LIVE UPDATE (participant count in embed)
-      const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+      const updated = EmbedBuilder.from(interaction.message.embeds[0])
         .setDescription(
           `Prize: **${giveaway.prize}**\n` +
           `🏆 Winners: **${giveaway.winnersCount}**\n` +
           `👥 Participants: **${giveaway.participants.size}**\n\n` +
-          `Click the button below to join!`
+          `Click the button to join!`
         );
 
-      await interaction.message.edit({ embeds: [updatedEmbed] });
+      await interaction.message.edit({ embeds: [updated] });
 
       return interaction.reply({
-        content: '✅ You joined the giveaway!',
+        content: '✅ Joined giveaway!',
         ephemeral: true
       });
     }
