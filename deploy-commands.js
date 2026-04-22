@@ -1,72 +1,43 @@
-require('dotenv').config();
-const { REST, Routes, SlashCommandBuilder } = require('discord.js');
+require("dotenv").config();
+const { REST, Routes, SlashCommandBuilder } = require("discord.js");
 
 const commands = [
 
   new SlashCommandBuilder()
-    .setName('giveaway')
-    .setDescription('Start a giveaway')
+    .setName("promote")
+    .setDescription("Promote a staff member")
+    .addUserOption(o =>
+      o.setName("user").setDescription("User").setRequired(true))
+    .addRoleOption(o =>
+      o.setName("role").setDescription("New role").setRequired(true))
     .addStringOption(o =>
-      o.setName('duration')
-        .setDescription('10s, 5m, 1h')
-        .setRequired(true)
-    )
-    .addStringOption(o =>
-      o.setName('prize')
-        .setDescription('Prize')
-        .setRequired(true)
-    )
-    .addIntegerOption(o =>
-      o.setName('winners')
-        .setDescription('Number of winners')
-        .setRequired(false)
-    ),
+      o.setName("reason").setDescription("Reason").setRequired(false)),
 
   new SlashCommandBuilder()
-    .setName('reroll')
-    .setDescription('Reroll winner(s)')
+    .setName("demote")
+    .setDescription("Demote a staff member")
+    .addUserOption(o =>
+      o.setName("user").setDescription("User").setRequired(true))
+    .addRoleOption(o =>
+      o.setName("role").setDescription("Role to remove").setRequired(true))
     .addStringOption(o =>
-      o.setName('message_id')
-        .setDescription('Giveaway message ID')
-        .setRequired(true)
-    ),
+      o.setName("reason").setDescription("Reason").setRequired(false)),
 
-  new SlashCommandBuilder()
-    .setName('end')
-    .setDescription('End giveaway early')
-    .addStringOption(o =>
-      o.setName('message_id')
-        .setDescription('Giveaway message ID')
-        .setRequired(true)
-    ),
+].map(cmd => cmd.toJSON());
 
-  new SlashCommandBuilder()
-    .setName('participants')
-    .setDescription('View participants')
-    .addStringOption(o =>
-      o.setName('message_id')
-        .setDescription('Giveaway message ID')
-        .setRequired(true)
-    )
-
-].map(c => c.toJSON());
-
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
   try {
-    console.log('🔄 Registering commands...');
+    console.log("🚀 Deploying commands...");
 
     await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID
-      ),
+      Routes.applicationCommands(process.env.CLIENT_ID),
       { body: commands }
     );
 
-    console.log('✅ Commands registered!');
-  } catch (err) {
-    console.error(err);
+    console.log("✅ Commands deployed!");
+  } catch (error) {
+    console.error(error);
   }
 })();
